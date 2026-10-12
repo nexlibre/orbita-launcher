@@ -26,7 +26,7 @@ class LauncherSmokeTest {
         ui.onNodeWithText("Buscar aplicaciones").performTextInput("orbita-no-such-app-81937")
         ui.onNodeWithText("Sin coincidencias.").assertIsDisplayed()
         ui.onNodeWithText("Escritorio").performClick()
-        ui.onNodeWithText("Ajustes").performClick()
+        ui.onNodeWithContentDescription("Ajustes").performClick()
         ui.onNodeWithText("Essential · Automático").assertIsDisplayed()
         ui.onNodeWithText("Descartar").performClick()
         ui.onNodeWithText("Aplicaciones").assertIsDisplayed()

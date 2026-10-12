@@ -4,6 +4,8 @@ import android.content.Intent
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,9 +14,18 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import org.nexlibre.orbita.core.*
@@ -35,7 +46,7 @@ fun Orbita(state: LauncherState, homeRequest: Int) {
             Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("ÓRBITA", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(vertical = 18.dp))
-                    TextButton(onClick = { draftLabels = s.labels; settings = true }) { Text("Ajustes") }
+                    IconButton(onClick = { draftLabels = s.labels; settings = true }) { Icon(Icons.Default.Settings, contentDescription = "Ajustes") }
                 }
                 s.error?.let { Text(it, color = MaterialTheme.colorScheme.error); TextButton(onClick = state::refresh) { Text("Actualizar aplicaciones") } }
                 if (drawer) {
@@ -50,7 +61,7 @@ fun Orbita(state: LauncherState, homeRequest: Int) {
                                     Spacer(Modifier.width(12.dp))
                                     Text(app.label, modifier = Modifier.weight(1f))
                                 }
-                                TextButton(onClick = { options = app }) { Text("Opciones de ${app.label}") }
+                                IconButton(onClick = { options = app }) { Icon(Icons.Default.MoreVert, contentDescription = "Opciones de ${app.label}") }
                             }
                         }
                     }
@@ -58,15 +69,7 @@ fun Orbita(state: LauncherState, homeRequest: Int) {
                     if (s.home.isEmpty()) Text("Tu universo. Tus reglas.\nAbre Aplicaciones para añadir accesos.", modifier = Modifier.padding(vertical = 16.dp))
                     LazyVerticalGrid(columns = GridCells.Fixed(5), modifier = Modifier.weight(1f)) {
                         items(pinnedApps(s.home, s.apps), key = { it.key }) { app ->
-                            Column {
-                                TextButton(onClick = { state.open(app) }) {
-                                    Column {
-                                        s.icons[app.key]?.let { Image(it, contentDescription = "Abrir ${app.label}", modifier = Modifier.size(44.dp)) }
-                                        if (s.labels || s.icons[app.key] == null) Text(app.label)
-                                    }
-                                }
-                                TextButton(onClick = { options = app }) { Text("Editar ${app.label}", style = MaterialTheme.typography.labelSmall) }
-                            }
+                            AppTile(app, s, onOpen = { state.open(app) }, onOptions = { options = app })
                         }
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -99,5 +102,21 @@ fun Orbita(state: LauncherState, homeRequest: Int) {
         if (s.ready && s.welcome) AlertDialog(onDismissRequest = {}, title = { Text("Bienvenido a ÓRBITA") }, text = {
             Text("Un inicio local y sin cuentas. Usa Aplicaciones y sus opciones para añadir accesos. En Ajustes puedes elegir ÓRBITA como inicio y abrir Accesibilidad. Versión de desarrollo: faltan funciones de Alfa 0.1.")
         }, confirmButton = { TextButton(onClick = state::finishWelcome) { Text("Comenzar") } })
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun AppTile(app: AppRecord, snapshot: LauncherSnapshot, onOpen: () -> Unit, onOptions: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp)
+        .combinedClickable(onClick = onOpen, onLongClick = onOptions)
+        .semantics {
+            contentDescription = "Abrir ${app.label}"
+            customActions = listOf(CustomAccessibilityAction("Opciones de ${app.label}") { onOptions(); true })
+        }.padding(vertical = 10.dp, horizontal = 2.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        snapshot.icons[app.key]?.let { Image(it, contentDescription = null, modifier = Modifier.size(44.dp)) }
+        if (snapshot.labels || snapshot.icons[app.key] == null) {
+            Text(app.label, maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelSmall)
+        }
     }
 }
