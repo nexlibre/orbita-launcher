@@ -1,0 +1,103 @@
+name: Android verification
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install SDK
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Tests, lint and debug APK
+        run: ./gradlew --no-daemon :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ORBITA-0.1.0-dev.1-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-reports
+          path: |
+            app/build/reports/tests/
+            app/build/reports/lint-results-debug.*
+          if-no-files-found: warn
+  android-smoke:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [29, 35]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Enable emulator KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: ./gradlew --no-daemon :app:connectedDebugAndroidTest
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-test-reports-${{ matrix.api }}
+          path: app/build/reports/androidTests/
+          if-no-files-found: warn
+  first-development-release:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [verify, android-smoke]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ORBITA-0.1.0-dev.1-debug
+          path: apk
+      - name: Publish first verified development APK only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release list --json tagName --limit 100 > releases.json
+          if jq -e 'any(.[]; .tagName == "v0.1.0-dev.1")' releases.json >/dev/null; then
+            echo 'First development release exists; no replacement or differently signed update will be published.'
+            exit 0
+          fi
+          cp apk/app-debug.apk ORBITA-0.1.0-dev.1.apk
+          sha256sum ORBITA-0.1.0-dev.1.apk > SHA256SUMS.txt
+          gh release create v0.1.0-dev.1 ORBITA-0.1.0-dev.1.apk SHA256SUMS.txt \
+            --target "$GITHUB_SHA" --prerelease --title 'ÓRBITA 0.1.0-dev.1 · Primer núcleo de prueba' \
+            --notes-file docs/RELEASE_DEV_1.md
