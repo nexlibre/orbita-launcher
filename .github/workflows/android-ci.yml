@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      ORBITA_SIGNING_PATH: ${{ runner.temp }}/orbita-development.p12
+      ORBITA_SIGNING_PATH: /tmp/orbita-development.p12
       ORBITA_SIGNING_PASSWORD: ${{ secrets.ORBITA_DEBUG_STORE_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      ORBITA_SIGNING_PATH: ${{ runner.temp }}/orbita-development.p12
+      ORBITA_SIGNING_PATH: /tmp/orbita-development.p12
       ORBITA_SIGNING_PASSWORD: ${{ secrets.ORBITA_DEBUG_STORE_PASSWORD }}
     strategy:
       fail-fast: false
