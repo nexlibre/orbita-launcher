@@ -21,7 +21,7 @@ class LauncherSmokeTest {
         assertTrue(homes.any { it.activityInfo.packageName == ui.activity.packageName })
         ui.waitUntil(10_000) { ui.onAllNodesWithText("Comenzar").fetchSemanticsNodes().isNotEmpty() }
         lateinit var state: LauncherState
-        ui.runOnUiThread { state = ViewModelProvider(ui.activity)[LauncherState::class.java] }
+        ui.runOnUiThread { state = ui.activity.launcherState }
         ui.onNodeWithText("Comenzar").performClick()
         ui.waitUntil(10_000) { !state.snapshot.welcome }
         ui.onNodeWithTag("gestureHandle").performTouchInput { swipeUp() }

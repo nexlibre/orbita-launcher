@@ -36,7 +36,7 @@ class ProcessAcceptanceTest {
     @Test fun fixtureInstalledAndLaunchable() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             lateinit var state: LauncherState
-            scenario.onActivity { state=ViewModelProvider(it)[LauncherState::class.java];state.refresh() }
+            scenario.onActivity { state=it.launcherState;state.refresh() }
             runBlocking { withTimeout(15_000) { while (state.snapshot.apps.none { it.key==fixture }) delay(100) } }
             scenario.onActivity { state.open(state.snapshot.apps.first { it.key==fixture }) }
             Thread.sleep(500)
@@ -46,7 +46,7 @@ class ProcessAcceptanceTest {
     @Test fun fixtureAbsentLayoutPreserved() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             lateinit var state:LauncherState
-            scenario.onActivity { state=ViewModelProvider(it)[LauncherState::class.java];state.refresh() }
+            scenario.onActivity { state=it.launcherState;state.refresh() }
             runBlocking { withTimeout(15_000) { while(!state.snapshot.ready || state.snapshot.apps.isEmpty()) delay(100) } }
             assertTrue(state.snapshot.apps.none { it.key==fixture })
             assertEquals(expected(),state.snapshot.layout)

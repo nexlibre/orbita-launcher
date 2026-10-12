@@ -17,6 +17,7 @@ import org.nexlibre.orbita.feature.Orbita
 
 class MainActivity : ComponentActivity() {
     private lateinit var state: LauncherState
+    val launcherState: LauncherState get() = state
     private var registered = false
     private var homeRequest by mutableIntStateOf(0)
     private val packages = object : BroadcastReceiver() {
@@ -24,7 +25,7 @@ class MainActivity : ComponentActivity() {
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        state = ViewModelProvider(this)[LauncherState::class.java]
+        state = (application as OrbitaApplication).launcherState
         setContent { Orbita(state, homeRequest) }
     }
     override fun onNewIntent(intent: Intent) {

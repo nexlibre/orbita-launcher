@@ -50,7 +50,7 @@ class LiveCatalogTest {
         val repository=org.nexlibre.orbita.core.LauncherRepositories.get(app)
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             lateinit var state:org.nexlibre.orbita.core.LauncherState
-            scenario.onActivity { state=ViewModelProvider(it)[org.nexlibre.orbita.core.LauncherState::class.java] }
+            scenario.onActivity { state=it.launcherState }
             waitFor { state.snapshot.ready && state.snapshot.apps.isNotEmpty() }
             val original=state.snapshot.layout
             assertTrue(state.snapshot.apps.none { it.key==fixture })
