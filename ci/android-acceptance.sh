@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ./gradlew --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=org.nexlibre.orbita.LauncherSmokeTest :fixture:assembleDebug
+# AGP removes the tested packages at the end of connected tests; reinstall for cross-process acceptance.
+adb install -r -t app/build/outputs/apk/debug/app-debug.apk
+adb install -r -t app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 run_case() {
   local method="$1"
   adb shell am instrument -w -e class "org.nexlibre.orbita.ProcessAcceptanceTest#$method" org.nexlibre.orbita.test/androidx.test.runner.AndroidJUnitRunner | tee "case-$method.log"
