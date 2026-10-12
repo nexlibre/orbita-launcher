@@ -34,6 +34,8 @@ import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.nexlibre.orbita.core.*
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -106,10 +108,13 @@ fun Orbita(state: LauncherState, homeRequest: Int) {
                 }) { showDrawer -> Column(Modifier.fillMaxSize()) {
                 if (showDrawer) {
                     OutlinedTextField(query, { query = it }, label = { Text("Buscar aplicaciones") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    val results = remember(s.apps, query) { visibleApps(s.apps, query) }
-                    if (results.isEmpty()) Text(if (query.isBlank()) "No hay aplicaciones disponibles." else "Sin coincidencias.", Modifier.padding(20.dp))
+                    val results by produceState<List<AppRecord>?>(initialValue = null, key1 = s.apps, key2 = query) {
+                        value = null
+                        value = withContext(Dispatchers.Default) { visibleApps(s.apps, query) }
+                    }
+                    if (results?.isEmpty() == true) Text(if (query.isBlank()) "No hay aplicaciones disponibles." else "Sin coincidencias.", Modifier.padding(20.dp))
                     LazyColumn(Modifier.weight(1f)) {
-                        items(results, key = { it.key }) { app -> AppRow(app, s, { state.open(app) }, { options = app }) }
+                        items(results.orEmpty(), key = { it.key }) { app -> AppRow(app, s, { state.open(app) }, { options = app }) }
                     }
                 } else {
                     if (s.layout.items.isEmpty()) Text("Tu universo. Tus reglas.\nAbre Aplicaciones para añadir accesos.", Modifier.padding(vertical = 12.dp), style = MaterialTheme.typography.bodyMedium)

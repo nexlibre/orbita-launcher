@@ -27,6 +27,7 @@ class LauncherSmokeTest {
         ui.onNodeWithTag("gestureHandle").performTouchInput { swipeUp() }
         ui.onNodeWithText("Buscar aplicaciones").assertIsDisplayed()
         ui.onNodeWithText("Buscar aplicaciones").performTextInput("no-such-app-81937")
+        ui.waitUntil(10_000) { ui.onAllNodesWithText("Sin coincidencias.").fetchSemanticsNodes().isNotEmpty() }
         ui.onNodeWithText("Sin coincidencias.").assertIsDisplayed()
         ui.onNodeWithTag("gestureHandle").performTouchInput { swipeDown() }
         ui.onNodeWithText("Aplicaciones").assertIsDisplayed()
@@ -45,6 +46,7 @@ class LauncherSmokeTest {
         val apps = state.snapshot.apps.distinctBy { it.label }.take(2)
         ui.onNodeWithText("Aplicaciones").performClick()
         ui.onNodeWithText("Buscar aplicaciones").performTextInput(apps[0].label)
+        ui.waitUntil(10_000) { ui.onAllNodesWithContentDescription("Opciones de ${apps[0].label}").fetchSemanticsNodes().isNotEmpty() }
         ui.onAllNodesWithContentDescription("Opciones de ${apps[0].label}").onFirst().performClick()
         ui.onNodeWithText("Añadir al escritorio").performClick()
         ui.waitUntil(10_000) { state.snapshot.layout.items.size == 1 }

@@ -11,6 +11,7 @@ class LargeTextTest {
     @Test fun essentialControlsRemainReachableAtTwoHundredPercent() {
         ui.onNodeWithText("Aplicaciones").assertIsDisplayed().assertHasClickAction().performClick()
         ui.onNodeWithText("Buscar aplicaciones").assertIsDisplayed().performTextInput("no-result-7391")
+        ui.waitUntil(10_000) { ui.onAllNodesWithText("Sin coincidencias.").fetchSemanticsNodes().isNotEmpty() }
         ui.onNodeWithText("Sin coincidencias.").assertIsDisplayed()
         ui.onNodeWithText("Escritorio").assertIsDisplayed().performClick()
         ui.onNodeWithContentDescription("Ajustes").assertIsDisplayed().performClick()
