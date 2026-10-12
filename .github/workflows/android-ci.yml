@@ -12,7 +12,10 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
+    env:
+      ORBITA_SIGNING_PATH: ${{ runner.temp }}/orbita-development.p12
+      ORBITA_SIGNING_PASSWORD: ${{ secrets.ORBITA_DEBUG_STORE_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -23,6 +26,19 @@ jobs:
         with:
           packages: platform-tools
           log-accepted-android-sdk-licenses: false
+      - name: Restore protected development signing key
+        if: github.event_name != 'pull_request'
+        env:
+          SIGNING_KEY: ${{ secrets.ORBITA_DEBUG_KEYSTORE_B64 }}
+        run: |
+          python3 - <<'PY'
+          import base64, os
+          from pathlib import Path
+          value=os.environ.get('SIGNING_KEY','')
+          assert value and os.environ.get('ORBITA_SIGNING_PASSWORD'), 'Persistent signing is required.'
+          path=Path(os.environ['ORBITA_SIGNING_PATH'])
+          path.write_bytes(base64.b64decode(value,validate=True));path.chmod(0o600)
+          PY
       - uses: gradle/actions/setup-gradle@v4
       - name: Install SDK
         run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
@@ -30,7 +46,7 @@ jobs:
         run: ./gradlew --no-daemon :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: ORBITA-0.1.0-dev.1-debug
+          name: ORBITA-0.1.0-alpha.1-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
@@ -46,17 +62,33 @@ jobs:
   android-smoke:
     needs: verify
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
+    env:
+      ORBITA_SIGNING_PATH: ${{ runner.temp }}/orbita-development.p12
+      ORBITA_SIGNING_PASSWORD: ${{ secrets.ORBITA_DEBUG_STORE_PASSWORD }}
     strategy:
       fail-fast: false
       matrix:
-        api: [29, 35]
+        api: [26, 29, 33, 35]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+      - name: Restore protected development signing key
+        if: github.event_name != 'pull_request'
+        env:
+          SIGNING_KEY: ${{ secrets.ORBITA_DEBUG_KEYSTORE_B64 }}
+        run: |
+          python3 - <<'PY'
+          import base64, os
+          from pathlib import Path
+          value=os.environ.get('SIGNING_KEY','')
+          assert value and os.environ.get('ORBITA_SIGNING_PASSWORD'), 'Persistent signing is required.'
+          path=Path(os.environ['ORBITA_SIGNING_PATH'])
+          path.write_bytes(base64.b64decode(value,validate=True));path.chmod(0o600)
+          PY
       - uses: gradle/actions/setup-gradle@v4
       - name: Enable emulator KVM
         run: |
@@ -69,38 +101,13 @@ jobs:
           arch: x86_64
           target: google_apis
           disable-animations: true
-          script: ./gradlew --no-daemon :app:connectedDebugAndroidTest
+          script: ./ci/android-acceptance.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: android-test-reports-${{ matrix.api }}
-          path: app/build/reports/androidTests/
+          path: |
+            app/build/reports/androidTests/
+            case-*.log
+            *-activity.log
           if-no-files-found: warn
-  first-development-release:
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    needs: [verify, android-smoke]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: ORBITA-0.1.0-dev.1-debug
-          path: apk
-      - name: Publish first verified development APK only
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          gh release list --json tagName --limit 100 > releases.json
-          if jq -e 'any(.[]; .tagName == "v0.1.0-dev.1")' releases.json >/dev/null; then
-            echo 'First development release exists; no replacement or differently signed update will be published.'
-            exit 0
-          fi
-          cp apk/app-debug.apk ORBITA-0.1.0-dev.1.apk
-          sha256sum ORBITA-0.1.0-dev.1.apk > SHA256SUMS.txt
-          gh release create v0.1.0-dev.1 ORBITA-0.1.0-dev.1.apk SHA256SUMS.txt \
-            --target "$GITHUB_SHA" --prerelease --title 'ÓRBITA 0.1.0-dev.1 · Primer núcleo de prueba' \
-            --notes-file docs/RELEASE_DEV_1.md
