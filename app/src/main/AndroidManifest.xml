@@ -5,7 +5,7 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
     </queries>
-    <application android:label="ÓRBITA" android:theme="@style/Theme.Orbita"
+    <application android:label="ÓRBITA" android:icon="@mipmap/ic_launcher" android:theme="@style/Theme.Orbita"
         android:allowBackup="false" android:supportsRtl="true">
         <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTask">
             <intent-filter>
