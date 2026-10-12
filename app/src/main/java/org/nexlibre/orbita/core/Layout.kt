@@ -127,6 +127,8 @@ object LayoutCodec {
         var result = Layout()
         home.distinct().forEach { result = result.add(it) }
         dock.distinct().forEach { result = result.add(it, dock = true) }
-        return result.checked()
+        return result.copy(items = result.items.map { item ->
+            item.copy(id = UUID.nameUUIDFromBytes(("orbita-v1:" + item.members.single()).toByteArray(Charsets.UTF_8)).toString())
+        }).checked()
     }
 }

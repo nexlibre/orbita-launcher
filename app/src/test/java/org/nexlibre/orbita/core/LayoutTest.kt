@@ -10,6 +10,7 @@ class LayoutTest {
         assertEquals(listOf(0,1,2), data.items.filterNot { it.dock }.map { it.slot })
         assertEquals(listOf(key(1),key(2),key(3),key(4)), data.items.flatMap { it.members })
         assertEquals(data, LayoutCodec.decode(LayoutCodec.encode(data)))
+        assertEquals(data, LayoutCodec.migrate(listOf(key(1), key(2), key(3)), listOf(key(4))))
     }
     @Test fun createsPagesWithoutReflowingSavedPositions() {
         var data = Layout()
