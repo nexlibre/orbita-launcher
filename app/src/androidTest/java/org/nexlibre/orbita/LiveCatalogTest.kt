@@ -22,7 +22,13 @@ class LiveCatalogTest {
     private fun shell(command: String): String = automation.executeShellCommand(command).use { descriptor ->
         android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor).bufferedReader().use { it.readText() }
     }
-    private fun waitFor(condition: () -> Boolean) = runBlocking { withTimeout(20_000) { while (!condition()) delay(100) } }
+    private fun waitFor(message: String = "state update", condition: () -> Boolean) {
+        try { runBlocking { withTimeout(20_000) { while (!condition()) delay(100) } } }
+        catch (failure: TimeoutCancellationException) {
+            val visible=nodes().joinToString("\n") { "${it.packageName}: text=${it.text}; desc=${it.contentDescription}; editable=${it.isEditable}; clickable=${it.isClickable}" }
+            throw AssertionError("Timed out: $message. Visible accessibility nodes:\n$visible",failure)
+        }
+    }
     private fun nodes(): List<AccessibilityNodeInfo> {
         val result=mutableListOf<AccessibilityNodeInfo>()
         val root=automation.rootInActiveWindow ?: return result
@@ -32,13 +38,13 @@ class LiveCatalogTest {
     }
     private fun click(text: String? = null, description: String? = null) {
         var node:AccessibilityNodeInfo?=null
-        waitFor { node=nodes().firstOrNull { if (description!=null) it.contentDescription?.toString()==description else it.text?.toString()==text };node!=null }
+        waitFor("click $text / $description") { node=nodes().firstOrNull { if (description!=null) it.contentDescription?.toString()==description else it.text?.toString()==text || it.contentDescription?.toString()==text };node!=null }
         while(node!=null && !node!!.isClickable) node=node!!.parent
         assertNotNull("Accessible clickable control: $text / $description",node)
         assertTrue(node!!.performAction(AccessibilityNodeInfo.ACTION_CLICK))
     }
-    private fun home() { shell("input keyevent KEYCODE_HOME");waitFor { nodes().any { it.contentDescription?.toString()=="Ajustes" } } }
-    private fun fixtureVisible() { waitFor { nodes().any { it.packageName?.toString()=="org.nexlibre.orbita.fixture" } } }
+    private fun home() { shell("input keyevent KEYCODE_HOME");waitFor("HOME window") { nodes().any { it.contentDescription?.toString()=="Ajustes" } } }
+    private fun fixtureVisible() { waitFor("fixture foreground") { nodes().any { it.packageName?.toString()=="org.nexlibre.orbita.fixture" } } }
     @Test fun liveInstallLaunchFromDrawerAndDesktopUninstallPreservesLayout() {
         val app=instrumentation.targetContext.applicationContext as Application
         val repository=org.nexlibre.orbita.core.LauncherRepositories.get(app)
@@ -56,7 +62,7 @@ class LiveCatalogTest {
             val label=state.snapshot.apps.first { it.key==fixture }.label
             click(text="Aplicaciones")
             var edit:AccessibilityNodeInfo?=null
-            waitFor { edit=nodes().firstOrNull { it.isEditable };edit!=null }
+            waitFor("editable drawer search") { edit=nodes().firstOrNull { it.isEditable };edit!=null }
             assertTrue(edit!!.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT,Bundle().apply {
                 putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,label)
             }))
