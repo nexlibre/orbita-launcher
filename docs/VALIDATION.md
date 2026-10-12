@@ -1,38 +1,34 @@
 # Resultados reales — 12 de octubre de 2026
 
-## Ejecutado
+## Alfa 0.1.0-alpha.1
 
-- GitHub `get_user_login`: cuenta nexlibre (ID 134002775).
-- Búsqueda `user:nexlibre orbita`: sin resultados. No demuestra por sí sola que no exista un repositorio inaccesible.
-- Compilador Kotlin 2.1.20 + JDK 17: compilar Catalog.kt y CatalogTest.kt con JUnit 4.13.2.
-- JUnitCore: **OK (4 tests)**, 0 fallos. Se ejecutó el código de producción del catálogo, no una reimplementación.
-- Wrapper oficial Gradle 8.11.1 generado; distribución con checksum SHA-256.
+Commit probado/publicado: 357a900bea603dc56448bd9bbcb6c3bd3e1b1285.
 
-## Fallos y límites de la etapa local inicial
+[Ejecutar y consultar informes](https://github.com/nexlibre/orbita-launcher/actions/runs/38278990550) · [Release](https://github.com/nexlibre/orbita-launcher/releases/tag/v0.1.0-alpha.1)
 
-- `:app:testDebugUnitTest :app:lintDebug :app:assembleDebug`: falló durante resolución de plugin `com.android.application:8.9.2`. Se instalaron SDK 35 y Build Tools; varios intentos con el proxy del entorno no resolvieron el plugin. No se alcanzó la compilación Android.
-- Los POM del plugin y del marcador respondieron HTTP 200 mediante curl. Esto no demuestra que Gradle o GitHub CI puedan resolver todo el árbol de dependencias.
-- En la etapa local inicial no se generó APK. Repositorio público creado y licencia Apache-2.0 confirmada posteriormente por el propietario. La verificación CI se documentará tras ejecutarse.
-- No se ejecutaron pruebas instrumentadas, TalkBack, reinicio, cambio de paquete o rendimiento en dispositivo.
-- Ninguno de los criterios P0 en Android se declara aprobado.
+- Compilación Kotlin/Android, assembleDebug y lintDebug correctos. Lint conserva advertencias: consultar el artefacto verification-reports; no se declaran cero advertencias.
+- 12 pruebas unitarias (8 Layout/Codec y 4 catálogo), incluidas identidad estable de migración, orden manual, swaps, datos inválidos, duplicados, capacidad y búsqueda de 1000 registros.
+- Cuatro jobs Android aprobados: API 26/29/33/35 (Android 8/10/13/15).
+- Cada dispositivo ejecutó un escenario Compose y nueve casos instrumentados en distintas fases/procesos: 40 ejecuciones de prueba en total, todas correctas. La verificación después de proceso/reinicio se ejecuta en dos momentos distintos.
+- UI: bienvenida, búsqueda, barra de gestos, preferencias, carpeta (crear/añadir/renombrar/reordenar/sacar), movimiento por posición, quitar sin desinstalar y deshacer.
+- Procesos/OS: force-stop, nuevo proceso y reboot real del emulador conservan disposición y apariencia.
+- Paquetes: fixture instalada/desinstalada mientras HOME permanece visible; 500 aliases lanzables reales más apps del sistema actualizan el catálogo. No se afirma que sean 500 paquetes distintos.
+- Accesibilidad Android: apertura real de fixture desde cajón/escritorio y texto 200% con controles alcanzables.
+- Datos: ZIP incluye layout/originales; archivo protobuf dañado archiva originales, bloquea edición y recupera copia válida de layout/apariencia.
+- Release protegida por todos los jobs: publicación correcta con APK debug y SHA256SUMS.txt.
 
-## Continuación autorizada
+APK: 9,864,977 bytes. Digest SHA-256 informado por GitHub: 71d33e107c12dcc1829ef4fa2199fc774aa2e1f58155442cb0500cd8e4af235b. Las instalaciones Android de la suite validaron firma durante las pruebas. La verificación local adicional del archivo descargado no se pudo ejecutar porque el entorno local se desconectó; no se afirma que se completó.
 
-El propietario autorizó la creación por navegador de nexlibre/orbita-launcher y confirmó Apache-2.0. GitHub confirma repositorio público y permisos de escritura. Se prepara CI con pruebas unitarias, lint y smoke instrumentado en API 29 y 35 antes de publicar la primera prerelease dev.1.
+## Errores encontrados y resueltos
 
-Publicar código no valida funciones. El primer CI deberá superar compilación, pruebas y lint antes de ofrecer el APK como build de desarrollo; completar P0 requiere los escenarios de ACCEPTANCE_TESTS.md.
+Configuración inicial de Actions con paquete SDK tools obsoleto; contexto runner no disponible en env de job; limpieza automática de APK de pruebas por AGP; selector de accesibilidad que coincidía con texto editable; núcleo independiente por actividad HOME/entrada estándar; IDs inestables de migración. Las correcciones están en el historial y el commit citado pasó la suite completa. Búsqueda y serialización se trasladaron fuera del hilo UI; accesos guardados pueden abrirse durante la carga del catálogo.
 
-## Verificación completada en GitHub Actions
+## Límites de aceptación
 
-Commit probado: `8cb0c73bc1b5f75a848fda4613f6971563f2b8e7`. Ejecución: https://github.com/nexlibre/orbita-launcher/actions/runs/38264872332
+No se ejecutó TalkBack hablado, una prueba de fabricantes/teléfono físico, medición de frames en dispositivo básico, corte físico de energía o disco lleno. No se declara terminado ese trabajo ni todos los criterios P0. Liquid, Motion avanzado, Atelier, widgets/shortcuts y demás P1 siguen fuera.
 
-- Compilación Kotlin/Android y assembleDebug: correctos.
-- JUnit: 4 pruebas, 0 fallos, 0 ignoradas. Informe del catálogo: 0.121 segundos.
-- Android lint: 0 errores, 13 advertencias. Tipos: OldTargetApi, GradleDependency (8), DataExtractionRules, ObsoleteSdkInt, MonochromeLauncherIcon y UseKtx. La revisión de dependencias/SDK y refinamientos de configuración sigue pendiente; no se ocultan las advertencias.
-- Smoke instrumentado: 1 escenario en API 29 (Android 10) y el mismo en API 35 (Android 15), ambos correctos. Comprueba actividad HOME declarada, bienvenida, apertura del cajón, búsqueda sin coincidencias y entrar/descartar ajustes.
-- Publicación de primera prerelease: correcta; APK de depuración y checksum disponibles en https://github.com/nexlibre/orbita-launcher/releases/tag/v0.1.0-dev.1
-- APK publicado: 9,766,649 bytes. SHA-256: `cb28c9640d01f93fa4df632fc30c23831bd7a169d17a6f91e543126807c2f33b`.
+La firma temporal de dev.1 no fue recuperable. La alfa inicia una firma persistente guardada en GitHub Secrets; para pasar de dev.1 a alfa se requiere retirar dev.1, perdiendo sus ajustes/accesos. La futura actualización con misma firma debe validarse al producir la siguiente alfa.
 
-Estas pruebas no seleccionan el launcher predeterminado ni abren otra app, no fuerzan cierre/reinicio de dispositivo, no validan TalkBack y no miden hardware real. Tampoco validan API 26 o perfiles de trabajo. Los criterios P0 completos siguen pendientes; dev.1 no se anuncia como Alfa 0.1 completa.
+## Entrega anterior
 
-La primera ejecución CI falló por el paquete obsoleto `tools`; se corrigió a `platform-tools`. El segundo commit compiló y pasó lint/JUnit pero su ejecución se canceló al publicar el icono. La ejecución citada arriba prueba el commit definitivo de dev.1 y pasó todas sus etapas.
+0.1.0-dev.1: commit 8cb0c73bc1b5f75a848fda4613f6971563f2b8e7 y ejecución 38264872332. Cuatro pruebas unitarias y smoke API 29/35, primera release debug. No implementaba todos los P0.

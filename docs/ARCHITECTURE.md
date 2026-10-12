@@ -1,13 +1,13 @@
-# Arquitectura inicial
+# Arquitectura del núcleo Alfa 0.1
 
-`core/Catalog.kt`: catálogo y búsqueda puros, sin APIs Android. Pruebas de orden estable, normalización y ausencias.
+Catalog.kt normaliza búsqueda y orden estable. Layout.kt implementa páginas, slots, dock, carpetas, codec versionado/acotado y migración con IDs deterministas. LauncherRepository mantiene una instancia DataStore por archivo, transacciones y respaldo AtomicFile de configuración válida; archiva originales dañados y exporta por ContentResolver/SAF. LauncherState publica estado unidireccional, inventario/cancelación y edición serializada con deshacer.
 
-`core/LauncherState.kt`: integración PackageManager, modelos, persistencia DataStore y estado unidireccional. ComponentName identifica cada actividad; el catálogo actual no elimina registros persistentes de aplicaciones ausentes.
+OrbitaApplication mantiene un ViewModelStore del núcleo compartido por HOME y la entrada normal. Android puede crear tareas/actividades diferentes; compartir catálogo, mutex y deshacer evita divergencias. MainActivity conecta ciclo de vida y cambios de paquetes. Orbita.kt presenta páginas, cajón, carpetas, posición/edición, preferencias, gestos y recuperación.
 
-`feature/Orbita.kt`: presentación Compose de Essential, escritorio, cajón, bienvenida y borrador de etiquetas. `MainActivity` conecta ciclo de vida HOME y cambios del sistema.
+Inventario/iconos, búsqueda/ordenación y validación/serialización se ejecutan fuera del hilo de interfaz. Cambiar apariencia no reordena posiciones. El historial de 20 pasos es temporal; la disposición confirmada es persistente. La copia guarda layout, apariencia y bienvenida. Apps ausentes conservan referencias; intentar abrirlas muestra un aviso.
 
-Este es un módulo app con paquetes por responsabilidad, no una arquitectura multimódulo terminada. Antes de añadir motores, extraer repositorios e interfaces para Theme/Layout/Motion; no convertir LauncherState en un contenedor de todos los motores. Los módulos Widget y Atelier se crearán cuando exista implementación validada, evitando módulos vacíos.
+Una operación valida el modelo antes de confirmar. El codec rechaza versión desconocida, entradas extra y datos inválidos. La corrupción archiva originales y bloquea edición; no la sustituye silenciosamente por una disposición vacía. Recuperar vacío requiere exportar y confirmar. Exportar incluye referencias/configuración, no APK ni datos externos.
 
-No se sustituyen Recientes, pantalla de bloqueo ni animaciones del sistema. El incremento no añade animaciones complejas: reducción de movimiento e integración con preferencias Android deben validarse antes de introducirlas.
+Es un módulo app separado por paquetes, no una arquitectura multimódulo terminada. El Layout Core puro prepara el futuro Layout Engine; Theme/Motion y Widget/Atelier deberán extraerse con contratos reales al añadir capacidades, sin módulos vacíos ni efectos gráficos costosos en el núcleo inicial.
 
-DataStore serializa ediciones de preferencias. Validar toda la disposición antes de exponer edición evita sobrescribir datos inválidos. Ante error de lectura la edición queda bloqueada y los datos se conservan; la UI de recuperación/exportación aún falta. No se escribe una disposición por defecto automáticamente sobre datos corruptos.
+Límites: cinco columnas, 25 slots/página, hasta 40 páginas, cinco slots de dock; carpetas sin anidación y perfil personal. No sustituye Recientes, bloqueo ni otras apps. La zona de gestos está dentro de safeDrawing sin excluir gestos Android.

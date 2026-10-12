@@ -1,9 +1,9 @@
-# Ruta hacia Alfa 0.1
+# Ruta progresiva
 
-1. dev.1: HOME, catálogo, búsqueda, accesos y persistencia inicial. Compilar y validar en Android antes de publicar APK.
-2. dev.2: modelo estructurado de páginas, posiciones y carpetas; migración versionada; pruebas de invariantes y recuperación; movimiento con deshacer.
-3. dev.3: gestos interrumpibles, onboarding mejorado, temas/tokens, navegación accesible, TalkBack, fuente grande, reducción de movimiento.
-4. Alfa 0.1: ejecutar todos los criterios P0 en API 26, 29, 33 y 35, incluyendo un dispositivo básico real. Publicar resultados, limitaciones y APK firmado con clave persistente.
-5. P1 solo tras estabilizar P0. Liquid/Atelier/física avanzada quedan fuera.
+1. dev.1 publicado: núcleo inicial, HOME/catálogo y CI.
+2. alpha.1 publicado: implementación del núcleo P0, firma persistente y aceptación automatizada en Android 8/10/13/15.
+3. Siguiente validación: TalkBack real, fabricantes, teléfono básico/rendimiento, contraste, actualización alfa con misma firma y pruebas físicas de recuperación.
+4. P1 solo después de estabilizar esos resultados: widgets/shortcuts, cuadrícula y tamaños con vista previa, importación de respaldos.
+5. Theme/Layout/Motion Engines ampliados, Liquid y Atelier como fases posteriores, sin comprometer el núcleo.
 
-Cada criterio se marca terminado únicamente tras ejecutar su prueba. Mantener notas de versión y publicar issues correspondientes cuando exista el repositorio.
+No cerrar la aceptación manual por tener CI verde. Cada versión debe subir versionCode, mantener firma y publicar notas/evidencia. No reemplazar un tag publicado con otro APK.

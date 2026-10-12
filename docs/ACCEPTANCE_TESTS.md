@@ -1,16 +1,18 @@
-# Verificación P0 — todas pendientes en Android
+# Aceptación P0
 
-| Criterio | Comprobación | Estado |
+Las funciones del núcleo están implementadas y la automatización pasó en API 26/29/33/35. No se declara aprobada toda la aceptación de P0 hasta ejecutar los casos manuales restantes.
+
+| Criterio | Evidencia automatizada aprobada | Comprobación manual restante |
 |---|---|---|
-| HOME | Seleccionar ÓRBITA desde ajustes y pulsar Inicio | Pendiente |
-| Abrir apps | Abrir app desde escritorio, dock y cajón | Pendiente |
-| Persistencia | Fijar, quitar, forzar cierre y reiniciar | Pendiente |
-| Paquetes | Instalar/desinstalar con launcher visible y en segundo plano | Pendiente |
-| Carpetas | Crear, renombrar, ordenar, mover fuera | No implementado |
-| Tema | Claro/oscuro del sistema, guardar/descartar etiquetas | Pendiente |
-| Gestos | Subir/bajar sin bloquear navegación Android | No implementado |
-| Accesibilidad | TalkBack, abrir app y configurar con letra 200% | Pendiente |
-| Catálogo | Vacío, sin coincidencias, nombres duplicados y 1000 apps | Pruebas unitarias escritas; ejecución documentada aparte |
-| Recuperación | Datos inválidos, fallo de disco, restauración sin sobrescritura | Bloqueo de edición implementado; recuperación pendiente |
+| HOME | Declaración y selección del sistema; Inicio abre ÓRBITA | Selector en fabricantes |
+| Abrir apps | App real desde cajón y escritorio mediante accesibilidad Android | Apps del teléfono real |
+| Persistencia | Páginas, slots, carpeta, dock, apariencia; proceso y reinicio del emulador | Reinicio físico y actualización alfa |
+| Paquetes | Instalar/desinstalar con launcher visible, mismo proceso; 500 actividades de fixture | Tiendas/OEM |
+| Carpetas | Crear, añadir, renombrar, ordenar, sacar; mover/deshacer por UI; invariantes | Uso prolongado |
+| Tema | Guardar/descartar, persistencia y fuente 200% | Contraste y cambio Auto real |
+| Gestos | Subir/bajar barra inferior, botones y HOME | Navegación gestual de fabricantes |
+| Accesibilidad | Roles/semántica y acciones Android abren apps; controles con texto 200% | TalkBack hablado y lector real |
+| Búsqueda | 1000 registros JUnit, 500 actividades reales de fixture y sin coincidencias | Scroll/rendimiento físico |
+| Recuperación | Protobuf dañado, bloqueo de edición, archivo original, exportación y recuperación explícita | Energía/almacenamiento lleno |
 
-Repetir en API 26/29/33/35. Medir tiempo de inicio y frames en dispositivo básico real. Comprobar perfil de trabajo por separado (fuera de dev.1). Ningún criterio de aceptación se considera aprobado por inspección estática.
+P1 (widgets, shortcuts, cuadrícula variable e importación de ZIP) queda fuera. La exportación incluida no es un importador de respaldos. Emuladores y acciones de accesibilidad del framework no sustituyen TalkBack real.

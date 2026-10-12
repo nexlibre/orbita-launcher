@@ -1,9 +1,9 @@
 # Essential inicial
 
-Dev.1 usa Compose y Material 3 como base técnica: tema automático claro/oscuro, tipografía del sistema, tamaños táctiles accesibles y dock transparente. La dirección visual de ÓRBITA es propia; el icono adaptativo es un vector orbital ligero, verde suave sobre fondo oscuro.
+Identidad propia y ligera: icono orbital vectorial y colores verdes discretos, claros/oscuros. Auto hereda Android. Cinco columnas y dock sin cápsula. Etiquetas opcionales conservan el nombre accesible.
 
-El escritorio inicial usa cinco columnas. La pulsación larga abre opciones; TalkBack dispone de una acción semántica equivalente. En el cajón, las opciones se presentan mediante icono de tres puntos con descripción. No hay contador ni barra permanente de edición. La vista previa de etiquetas es sencilla y requiere Guardar o Descartar.
+Opciones del cajón mediante icono; escritorio mediante pulsación larga/acción accesible. Movimiento por posiciones con intercambio y deshacer, carpetas con orden manual. La barra inferior abre/cierra el cajón con subir/bajar y botones; no captura su scroll ni excluye gestos Android.
 
-Este incremento valida integración y estabilidad; aún no es el diseño visual final. Antes de ampliar personalización, extraer tokens explícitos de color, material, espaciado y tipografía y contratos del Layout/Theme Engine. No añadir efectos Liquid costosos al núcleo inicial.
+Fundidos cortos de cajón y paginación interrumpible, simplificados con reducción de movimiento compatible del sistema. Apariencia con borrador/muestra y Guardar/Descartar. Posiciones independientes del tema. Controles envuelven texto y permiten scroll; fonte 200% pasó la aceptación.
 
-Pendiente validar texto ampliado, contraste en todos los estados, TalkBack, iconos sin etiquetas, transiciones y dispositivos físicos. No declarar conformidad de accesibilidad por existencia de descripciones semánticas.
+No se presenta como diseño final ni como Liquid/física avanzada. TalkBack hablado, contraste físico y fabricantes siguen en aceptación manual.

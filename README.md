@@ -1,37 +1,33 @@
 # ÓRBITA Launcher
 
-Tu universo. Tus reglas.
+**Tu universo. Tus reglas.** Launcher Android original en Kotlin/Compose, local y de código abierto con Apache-2.0. Nombre provisional.
 
-Android/Kotlin + Compose. Primer incremento de desarrollo `0.1.0-dev.1`, **no Alfa 0.1 completa**. Nombre provisional. Repositorio público: [nexlibre/orbita-launcher](https://github.com/nexlibre/orbita-launcher).
+## Descargar en Android
 
-## Incluido en el código
+[Descargar Alfa 0.1](https://github.com/nexlibre/orbita-launcher/releases/tag/v0.1.0-alpha.1). En Assets, elegir ORBITA-0.1.0-alpha.1.apk, instalar y seleccionar ÓRBITA en Ajustes Android → Aplicaciones predeterminadas → Aplicación de inicio. Puedes volver al launcher anterior.
 
-Actividad HOME real, bienvenida local, inventario del perfil personal, apertura de aplicaciones, cajón vertical alfabético y búsqueda sin red, cuadrícula de cinco columnas, fijar/quitar accesos y dock de hasta cinco favoritos, persistencia con DataStore, Essential claro/oscuro automático, etiquetas con guardar/descartar y controles táctiles accesibles. Inventario e iconos se cargan fuera del hilo principal; cambios de paquetes y regreso a primer plano actualizan el catálogo. No utiliza INTERNET ni QUERY_ALL_PACKAGES.
+Alfa incluye páginas de cinco columnas, dock transparente, movimiento por posiciones/intercambio con deshacer, carpetas con orden manual, cajón alfabético y búsqueda local, Essential automático/claro/oscuro, etiquetas, movimiento reducido y vibración. Cambios de apariencia con vista previa, Guardar y Descartar. Pulsación larga o acción accesible abre opciones. Subir/bajar sobre la barra inferior abre/cierra el cajón; los botones ofrecen alternativas.
 
-## Estado de validación
+Disposición y preferencias se guardan con DataStore. Ante datos dañados, bloquea la edición, conserva originales y permite exportar, recuperar una copia válida o confirmar restaurar vacío después de exportar. Las referencias a apps ausentes se conservan. Sin cuentas, anuncios, INTERNET ni QUERY_ALL_PACKAGES.
 
-Ver `docs/VALIDATION.md`. No confundir pruebas del catálogo con validación de un launcher en dispositivo. El código permanece en desarrollo hasta superar compilación, lint, pruebas y escenarios Android.
+## Verificación real
 
-## Descargar desde Android
+[CI aprobado](https://github.com/nexlibre/orbita-launcher/actions/runs/38278990550): compilación, 12 pruebas unitarias, lint sin errores y 40 ejecuciones instrumentadas de aceptación entre Android 8/10/13/15. Incluye interfaz, carpetas, movimientos, deshacer, gestos, preferencias, cierre/reinicio, selección HOME, apertura accesible de apps, instalación/desinstalación en vivo, 500 actividades lanzables de una fixture, texto 200%, exportación y recuperación de corrupción.
 
-Las versiones verificadas se publican como prereleases en [Releases](https://github.com/nexlibre/orbita-launcher/releases). En Assets, descargar el archivo APK e instalarlo autorizando esa descarga en Android. Después: Ajustes → Aplicaciones predeterminadas → Aplicación de inicio → ÓRBITA. Siempre puedes volver al launcher anterior desde los ajustes de Android.
+**La aprobación total de P0 sigue pendiente de las comprobaciones manuales** de TalkBack hablado, fabricantes, contraste y rendimiento físico. Ver [VALIDATION](docs/VALIDATION.md) y [ACCEPTANCE_TESTS](docs/ACCEPTANCE_TESTS.md). Liquid, Atelier, física avanzada y widgets permanecen fuera de esta alfa.
 
-El primer APK es de depuración. La firma debug no está garantizada entre runners: antes de distribuir actualizaciones instalables sobre la primera versión habrá que configurar una clave persistente protegida. No se publican claves en el repositorio. No desinstales una versión con datos importantes para instalar otra sin respaldo.
+## Firma y actualizaciones
 
-El flujo dev.1 permite publicar solo la primera prerelease verificada; no publica actualizaciones con otra firma automáticamente. Una compilación fallida no produce una release. Los artefactos de Actions también permiten inspeccionar informes y APK de cada compilación; caducan en 30 días.
+Alfa utiliza una firma de desarrollo persistente, protegida con secretos cifrados de GitHub. No hay claves en código/artefactos/cachés. El APK es de depuración, no de producción.
 
-## Compilar
+Si instalaste dev.1, su firma temporal no se pudo recuperar: Android exige desinstalarla antes de instalar la alfa. Esto elimina sus accesos y ajustes; anótalos primero. Futuras versiones firmadas con la clave de la alfa pueden conservar los datos al actualizar.
 
-JDK 17, Gradle 8.11.1, SDK Android 35 y Build Tools 35.0.0. Android mínimo 8 (API 26). Identificador propuesto: org.nexlibre.orbita.
+## Arquitectura y desarrollo
 
-`./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug`
+El núcleo tiene catálogo/Layout/Codec puros, repositorio transaccional de persistencia/recuperación y un ViewModel compartido a nivel de aplicación. HOME y entrada ordinaria pueden ser tareas distintas; comparten catálogo, edición y deshacer. Inventario, búsqueda y serialización ocurren fuera del hilo UI. Estructura, apariencia y gestos permanecen separados del modelo persistido.
 
-Las versiones están fijadas. Se incluye el wrapper oficial Gradle 8.11.1 con checksum SHA-256 de la distribución.
+Android mínimo 8 (API 26), SDK 35, JDK 17, wrapper Gradle 8.11.1. Comando: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 
-## Pendientes
+La app fixture no se incluye en el APK de ÓRBITA. ci/android-acceptance.sh se usa solo en emuladores desechables: instala/desinstala la fixture, modifica ajustes, reinicia y daña datos deliberadamente para validar recuperación.
 
-Páginas, mover/reordenar, carpetas, gestos, restauración explícita de datos inválidos, prueba TalkBack/letra grande, animaciones adaptativas y medición de rendimiento. Liquid, Motion Engine avanzado, widgets y Atelier no están implementados. No soporta aún perfiles de trabajo.
-
-## Licencia
-
-Apache-2.0, confirmada por el propietario. Ver [LICENSE](LICENSE).
+[Visión](docs/PRODUCT_VISION.md) · [Especificación](docs/SPEC_ALPHA_0_1.md) · [Arquitectura](docs/ARCHITECTURE.md) · [Versiones](CHANGELOG.md) · [Licencia](LICENSE)
