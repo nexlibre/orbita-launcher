@@ -111,3 +111,30 @@ jobs:
             case-*.log
             *-activity.log
           if-no-files-found: warn
+  alpha-release:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [verify, android-smoke]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ORBITA-0.1.0-alpha.1-debug
+          path: apk
+      - name: Publish verified alpha only once
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release list --json tagName --limit 100 > releases.json
+          if jq -e 'any(.[]; .tagName == "v0.1.0-alpha.1")' releases.json >/dev/null; then
+            exit 0
+          fi
+          cp apk/app-debug.apk ORBITA-0.1.0-alpha.1.apk
+          sha256sum ORBITA-0.1.0-alpha.1.apk > SHA256SUMS.txt
+          gh release create v0.1.0-alpha.1 ORBITA-0.1.0-alpha.1.apk SHA256SUMS.txt \
+            --target "$GITHUB_SHA" --prerelease --title 'ÓRBITA 0.1.0-alpha.1 · Núcleo funcional' \
+            --notes-file docs/RELEASE_ALPHA_0_1.md

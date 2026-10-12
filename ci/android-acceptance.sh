@@ -24,16 +24,13 @@ import re
 text=Path('home-activity.log').read_text()
 assert re.search(r'(mResumedActivity|topResumedActivity|ResumedActivity).*org.nexlibre.orbita/.MainActivity',text),text
 PY
-adb install -r fixture/build/outputs/apk/debug/fixture-debug.apk
-run_case fixtureInstalledAndLaunchable
-adb shell dumpsys activity activities > fixture-activity.log
-python3 - <<'PY'
+adb push fixture/build/outputs/apk/debug/fixture-debug.apk /data/local/tmp/orbita-fixture.apk
+adb shell am instrument -w -e class org.nexlibre.orbita.LiveCatalogTest org.nexlibre.orbita.test/androidx.test.runner.AndroidJUnitRunner | tee case-live-catalog.log
+python3 - <<'PYTEST'
 from pathlib import Path
-import re
-text=Path('fixture-activity.log').read_text()
-assert re.search(r'(mResumedActivity|topResumedActivity|ResumedActivity).*org.nexlibre.orbita.fixture',text),text
-PY
-adb uninstall org.nexlibre.orbita.fixture
+text=Path('case-live-catalog.log').read_text()
+assert 'OK (1 test)' in text and 'FAILURES' not in text,text
+PYTEST
 run_case fixtureAbsentLayoutPreserved
 adb shell settings put system font_scale 2.0
 adb shell am instrument -w -e class org.nexlibre.orbita.LargeTextTest org.nexlibre.orbita.test/androidx.test.runner.AndroidJUnitRunner | tee case-large-text.log
