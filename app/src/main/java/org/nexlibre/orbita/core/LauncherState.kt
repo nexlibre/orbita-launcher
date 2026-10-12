@@ -73,7 +73,7 @@ class LauncherState(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             edits.withLock {
                 try {
-                    val (before, after) = repository.change(transform)
+                    val (before, after) = withContext(Dispatchers.IO) { repository.change(transform) }
                     if (before != after) { history.addLast(before); if (history.size > 20) history.removeFirst() }
                     snapshot = snapshot.copy(canUndo = history.isNotEmpty(), error = null)
                 } catch (error: Exception) { report(error, error.message ?: "No se guardó el cambio.") }
@@ -83,7 +83,7 @@ class LauncherState(application: Application) : AndroidViewModel(application) {
     fun undo() = viewModelScope.launch {
         edits.withLock {
             if (history.isNotEmpty() && !snapshot.recovery) {
-                try { repository.change { history.last() }; history.removeLast(); snapshot = snapshot.copy(canUndo = history.isNotEmpty()) }
+                try { withContext(Dispatchers.IO) { repository.change { history.last() } }; history.removeLast(); snapshot = snapshot.copy(canUndo = history.isNotEmpty()) }
                 catch (error: Exception) { report(error, "No se pudo deshacer. Los datos anteriores se conservan.") }
             }
         }
@@ -93,7 +93,7 @@ class LauncherState(application: Application) : AndroidViewModel(application) {
     fun recover(useBackup: Boolean) = viewModelScope.launch {
         if (!useBackup && !snapshot.exported) { snapshot = snapshot.copy(error = "Exporta los datos originales antes de restaurar el inicio vacío."); return@launch }
         edits.withLock {
-            try { repository.recover(if (useBackup) snapshot.backup ?: error("No hay copia válida.") else Layout()); history.clear(); snapshot = snapshot.copy(error = null, canUndo = false, exported = false) }
+            try { val recovered = if (useBackup) snapshot.backup ?: error("No hay copia válida.") else Layout(); withContext(Dispatchers.IO) { repository.recover(recovered) }; history.clear(); snapshot = snapshot.copy(error = null, canUndo = false, exported = false) }
             catch (e: Exception) { report(e, "No se pudieron recuperar los datos.") }
         }
     }
