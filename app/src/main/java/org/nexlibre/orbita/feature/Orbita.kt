@@ -123,7 +123,7 @@ fun Orbita(state: LauncherState, homeRequest: Int) {
                             items(PAGE_CELLS, key = { "$page:$it" }) { slot ->
                                 val item = s.layout.items.firstOrNull { !it.dock && it.page == page && it.slot == slot }
                                 if (item == null) Spacer(Modifier.height(88.dp)) else Tile(item, s, {
-                                    if (item.folder) folder = item.id else s.apps.find { it.key == item.members.first() }?.let(state::open)
+                                    if (item.folder) folder = item.id else state.open(s.apps.find { it.key == item.members.first() } ?: AppRecord(item.members.first(), "Aplicación"))
                                 }, { haptic(); selected = item.id })
                             }
                         }
@@ -137,7 +137,7 @@ fun Orbita(state: LauncherState, homeRequest: Int) {
                         repeat(5) { slot -> Box(Modifier.weight(1f)) {
                             val item = s.layout.items.firstOrNull { it.dock && it.slot == slot }
                             if (item == null) Spacer(Modifier.height(64.dp)) else Tile(item, s, {
-                                if (item.folder) folder = item.id else s.apps.find { it.key == item.members.first() }?.let(state::open)
+                                if (item.folder) folder = item.id else state.open(s.apps.find { it.key == item.members.first() } ?: AppRecord(item.members.first(), "Aplicación"))
                             }, { haptic(); selected = item.id }, dock = true)
                         } }
                     }
@@ -204,7 +204,7 @@ fun Orbita(state: LauncherState, homeRequest: Int) {
                 LazyColumn(Modifier.heightIn(max = 350.dp)) { items(item.members, key = { it }) { key ->
                     val app = s.apps.find { it.key == key } ?: AppRecord(key, "No disponible: ${key.substringBefore('/')}")
                     Column {
-                        Action(app.label) { s.apps.find { it.key == key }?.let(state::open) }
+                        Action(app.label) { state.open(s.apps.find { it.key == key } ?: AppRecord(key, "Aplicación")) }
                         Row {
                             IconButton(enabled = !s.recovery && key != item.members.first(), onClick = { state.edit { it.reorder(id, key, -1) } }) { Icon(Icons.Default.KeyboardArrowUp, "Subir ${app.label}") }
                             IconButton(enabled = !s.recovery && key != item.members.last(), onClick = { state.edit { it.reorder(id, key, 1) } }) { Icon(Icons.Default.KeyboardArrowDown, "Bajar ${app.label}") }
