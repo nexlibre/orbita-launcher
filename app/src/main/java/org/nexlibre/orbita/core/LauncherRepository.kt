@@ -37,6 +37,7 @@ data class SavedLauncher(val layout: Layout, val appearance: Appearance, val wel
 class LauncherRepository(private val app: Application) {
     private val file = app.preferencesDataStoreFile("orbita_core_v1")
     private val backup = AtomicFile(File(app.filesDir, "orbita-last-valid.layout"))
+    private val backupLock = Any()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val store = PreferenceDataStoreFactory.create(
         corruptionHandler = ReplaceFileCorruptionHandler {
@@ -105,7 +106,7 @@ class LauncherRepository(private val app: Application) {
         if (file.exists()) file.copyTo(File(app.filesDir, "orbita-recovery-${System.currentTimeMillis()}.pb"), overwrite = false)
     }
     private fun validBackup(): Layout? = validSavedBackup()?.layout
-    private fun validSavedBackup(): SavedLauncher? = runCatching {
+    private fun validSavedBackup(): SavedLauncher? = synchronized(backupLock) { runCatching {
         backup.openRead().use { input ->
             require(backup.baseFile.length() <= 2_000_000)
             val lines = input.bufferedReader().readLines()
@@ -114,8 +115,8 @@ class LauncherRepository(private val app: Application) {
             require(appearance.theme in listOf("auto", "light", "dark"))
             SavedLauncher(layout, appearance, if (lines.size == 7) lines[5].toBooleanStrict() else false)
         }
-    }.getOrNull()
-    private fun writeBackup(saved: SavedLauncher) {
+    }.getOrNull() }
+    private fun writeBackup(saved: SavedLauncher) = synchronized(backupLock) {
         val output = backup.startWrite()
         val value = listOf(LayoutCodec.encode(saved.layout), saved.appearance.labels.toString(), saved.appearance.reducedMotion.toString(), saved.appearance.haptics.toString(), saved.appearance.theme, saved.welcome.toString(), "backup-v1").joinToString("\n")
         try { output.write(value.toByteArray()); backup.finishWrite(output) }

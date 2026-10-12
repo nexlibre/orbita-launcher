@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.nexlibre.orbita.core.*
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun Orbita(state: LauncherState, homeRequest: Int) {
     val s = state.snapshot
@@ -220,7 +221,7 @@ fun Orbita(state: LauncherState, homeRequest: Int) {
                 Preference("Reducir movimiento", draft.reducedMotion) { draft = draft.copy(reducedMotion = it) }
                 Preference("Vibración sutil", draft.haptics) { draft = draft.copy(haptics = it) }
                 Text("Apariencia")
-                Row { listOf("auto" to "Auto", "light" to "Claro", "dark" to "Oscuro").forEach { (key, label) ->
+                FlowRow { listOf("auto" to "Auto", "light" to "Claro", "dark" to "Oscuro").forEach { (key, label) ->
                     TextButton(onClick = { draft = draft.copy(theme = key) }, modifier = Modifier.semantics { this.selected = draft.theme == key }) { Text(label) }
                 } }
                 val previewDark = draft.theme == "dark" || (draft.theme == "auto" && isSystemInDarkTheme())

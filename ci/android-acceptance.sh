@@ -35,6 +35,14 @@ assert re.search(r'(mResumedActivity|topResumedActivity|ResumedActivity).*org.ne
 PY
 adb uninstall org.nexlibre.orbita.fixture
 run_case fixtureAbsentLayoutPreserved
+adb shell settings put system font_scale 2.0
+adb shell am instrument -w -e class org.nexlibre.orbita.LargeTextTest org.nexlibre.orbita.test/androidx.test.runner.AndroidJUnitRunner | tee case-large-text.log
+python3 - <<'PYTEST'
+from pathlib import Path
+text=Path('case-large-text.log').read_text()
+assert 'OK (1 test)' in text and 'FAILURES' not in text,text
+PYTEST
+adb shell settings put system font_scale 1.0
 adb reboot
 adb wait-for-device
 for i in {1..90}; do
