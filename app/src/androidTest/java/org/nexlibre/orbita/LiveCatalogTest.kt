@@ -38,7 +38,7 @@ class LiveCatalogTest {
     }
     private fun click(text: String? = null, description: String? = null) {
         var node:AccessibilityNodeInfo?=null
-        waitFor("click $text / $description") { node=nodes().firstOrNull { if (description!=null) it.contentDescription?.toString()==description else it.text?.toString()==text || it.contentDescription?.toString()==text };node!=null }
+        waitFor("click $text / $description") { node=nodes().firstOrNull { if (description!=null) it.contentDescription?.toString()==description else !it.isEditable && (it.text?.toString()==text || it.contentDescription?.toString()==text) };node!=null }
         while(node!=null && !node!!.isClickable) node=node!!.parent
         assertNotNull("Accessible clickable control: $text / $description",node)
         assertTrue(node!!.performAction(AccessibilityNodeInfo.ACTION_CLICK))
