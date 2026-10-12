@@ -1,6 +1,9 @@
 package org.nexlibre.orbita
 
 import android.app.Application
+import android.net.Uri
+import java.io.File
+import java.util.zip.ZipFile
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.lifecycle.ViewModelProvider
@@ -49,9 +52,20 @@ class ProcessAcceptanceTest {
             assertEquals(expected(),state.snapshot.layout)
         }
     }
+    @Test fun exportedBackupContainsLayoutAndOriginalData() = runBlocking {
+        val file=File(app.cacheDir,"acceptance-backup.zip")
+        repository.export(Uri.fromFile(file))
+        ZipFile(file).use { zip ->
+            assertEquals(expected(),LayoutCodec.decode(zip.getInputStream(zip.getEntry("layout-v2.txt")).bufferedReader().readText()))
+            assertNotNull(zip.getEntry("original/orbita_core_v1.preferences_pb"))
+            assertNotNull(zip.getEntry("original/orbita-last-valid.layout"))
+        }
+        assertEquals(expected(),repository.saved.first().layout)
+    }
     @Test fun corruptionIsBlockedAndOriginalArchived() = runBlocking {
         val saved=repository.saved.first()
         assertTrue(saved.recovery);assertEquals(expected(),saved.layout);assertEquals(expected(),saved.backup)
+        assertEquals(Appearance(false,true,false,"dark"),saved.appearance)
         assertTrue(runCatching { repository.change { Layout() } }.isFailure)
         assertTrue(app.filesDir.listFiles().orEmpty().any { it.name.startsWith("orbita-recovery-") && it.readText().contains("invalid-protobuf") })
     }

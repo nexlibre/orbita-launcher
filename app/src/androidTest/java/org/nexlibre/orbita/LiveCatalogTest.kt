@@ -51,6 +51,8 @@ class LiveCatalogTest {
             assertTrue(shell("pm install -r /data/local/tmp/orbita-fixture.apk").contains("Success"))
             // The Activity is already visible: receiving PACKAGE_ADDED must update this same ViewModel.
             waitFor { state.snapshot.apps.any { it.key==fixture } }
+            assertEquals(500,state.snapshot.apps.count { it.key.startsWith("org.nexlibre.orbita.fixture/org.nexlibre.orbita.fixture.Alias") })
+            instrumentation.sendStatus(0,Bundle().apply { putString("inventory-volume","500 real launchable aliases plus installed system applications") })
             val label=state.snapshot.apps.first { it.key==fixture }.label
             click(text="Aplicaciones")
             var edit:AccessibilityNodeInfo?=null

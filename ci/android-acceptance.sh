@@ -14,6 +14,7 @@ PY
 run_case seed
 adb shell am force-stop org.nexlibre.orbita
 run_case verifyAfterRestart
+run_case exportedBackupContainsLayoutAndOriginalData
 adb shell cmd package set-home-activity org.nexlibre.orbita/.MainActivity
 adb shell input keyevent KEYCODE_HOME
 sleep 2
