@@ -11,3 +11,9 @@ Dev.1 requiere desinstalación única para cambiar de firma. Widgets, Liquid, At
 ## 0.1.0-dev.1 — 12 de octubre de 2026
 
 Primer núcleo público Kotlin/HOME, catálogo, búsqueda, fijar/quitar accesos, DataStore, Essential e icono propio. Cuatro pruebas unitarias, lint sin errores y smoke Android 10/15. Firma temporal, funciones P0 incompletas.
+
+## 0.2.0-alpha.1
+- Personalización inicial AMOLED, Pixel inspirado y Liquid inicial.
+- Reloj y búsqueda opcionales, tamaño de iconos y monogramas.
+- Animaciones de resorte y frecuencia preferida compatible hasta 144 Hz.
+- Respaldo de preferencias ampliado, con lectura del formato anterior.

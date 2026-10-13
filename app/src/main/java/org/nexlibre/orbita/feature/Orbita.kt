@@ -12,6 +12,11 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.selection.toggleable
@@ -33,6 +38,7 @@ import androidx.compose.ui.platform.*
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -40,7 +46,7 @@ import org.nexlibre.orbita.core.*
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun Orbita(state: LauncherState, homeRequest: Int) {
+fun Orbita(state: LauncherState, homeRequest: Int, refreshRates: List<Float> = emptyList()) {
     val s = state.snapshot
     var drawer by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
@@ -82,9 +88,7 @@ fun Orbita(state: LauncherState, homeRequest: Int) {
             else -> closeDrawer()
         }
     }
-    val dark = when(s.appearance.theme) { "light" -> false; "dark" -> true; else -> isSystemInDarkTheme() }
-    val palette = if (dark) darkColorScheme(primary = Color(0xFFAFDFA1), background = Color(0xFF101813), surface = Color(0xFF17231D))
-        else lightColorScheme(primary = Color(0xFF315E39), background = Color(0xFFF5F8F2), surface = Color(0xFFEDF3E9))
+    val palette = themePalette(s.appearance.theme, isSystemInDarkTheme())
     MaterialTheme(colorScheme = palette) {
         Surface(Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 14.dp)) {
@@ -104,7 +108,11 @@ fun Orbita(state: LauncherState, homeRequest: Int) {
                     IconButton(onClick = state::dismissError) { Icon(Icons.Default.Close, "Cerrar aviso") }
                 } }
                 AnimatedContent(targetState = drawer, modifier = Modifier.weight(1f), label = "drawer", transitionSpec = {
-                    fadeIn(tween(if (reduced) 0 else 140)) togetherWith fadeOut(tween(if (reduced) 0 else 100))
+                    if (reduced) fadeIn(tween(0)) togetherWith fadeOut(tween(0))
+                    else (fadeIn(tween(180)) + slideInVertically(spring(dampingRatio = 0.85f, stiffness = when(s.appearance.motion) {
+                        "weighty" -> 220f; "soft" -> 650f; else -> 400f
+                    })) { if (targetState) it / 8 else -it / 8 }) togetherWith
+                        (fadeOut(tween(120)) + slideOutVertically(tween(180)) { if (targetState) -it / 8 else it / 8 })
                 }) { showDrawer -> Column(Modifier.fillMaxSize()) {
                 if (showDrawer) {
                     OutlinedTextField(query, { query = it }, label = { Text("Buscar aplicaciones") }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -117,6 +125,10 @@ fun Orbita(state: LauncherState, homeRequest: Int) {
                         items(results.orEmpty(), key = { it.key }) { app -> AppRow(app, s, { state.open(app) }, { options = app }) }
                     }
                 } else {
+                    if (s.appearance.clock) ClockWidget(s.appearance)
+                    if (s.appearance.searchBar) OutlinedButton(onClick = { drawer = true }, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Default.Search, null); Spacer(Modifier.width(8.dp)); Text("Buscar aplicaciones")
+                    }
                     if (s.layout.items.isEmpty()) Text("Tu universo. Tus reglas.\nAbre Aplicaciones para añadir accesos.", Modifier.padding(vertical = 12.dp), style = MaterialTheme.typography.bodyMedium)
                     HorizontalPager(pager, Modifier.weight(1f), userScrollEnabled = !reduced) { page ->
                         LazyVerticalGrid(GridCells.Fixed(5), Modifier.fillMaxSize()) {
@@ -220,19 +232,48 @@ fun Orbita(state: LauncherState, homeRequest: Int) {
                 Action(app.label) { state.edit { it.addToFolder(id, app.key) } }
             } }
         }, confirmButton = { Action("Listo") { folderAdd = null; folder = id } }) }
-        if (settings) AlertDialog(onDismissRequest = { settings = false }, title = { Text("Essential · Ajustes") }, text = {
+        if (settings) AlertDialog(onDismissRequest = { settings = false }, title = { Text("ÓRBITA · Personalización") }, text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Preference("Mostrar etiquetas", draft.labels) { draft = draft.copy(labels = it) }
                 Preference("Reducir movimiento", draft.reducedMotion) { draft = draft.copy(reducedMotion = it) }
                 Preference("Vibración sutil", draft.haptics) { draft = draft.copy(haptics = it) }
                 Text("Apariencia")
-                FlowRow { listOf("auto" to "Auto", "light" to "Claro", "dark" to "Oscuro").forEach { (key, label) ->
-                    TextButton(onClick = { draft = draft.copy(theme = key) }, modifier = Modifier.semantics { this.selected = draft.theme == key }) { Text(label) }
+                FlowRow { listOf("auto" to "Auto", "light" to "Claro", "dark" to "Oscuro", "amoled" to "AMOLED", "pixel" to "Pixel inspirado", "liquid" to "Liquid inicial").forEach { (key, label) ->
+                    TextButton(onClick = { draft = draft.copy(theme = key, clock = if (key == "amoled") true else draft.clock, searchBar = if (key == "amoled") true else draft.searchBar) }, modifier = Modifier.semantics { this.selected = draft.theme == key }) { Text(label) }
                 } }
-                val previewDark = draft.theme == "dark" || (draft.theme == "auto" && isSystemInDarkTheme())
-                Surface(color = if (previewDark) Color(0xFF17231D) else Color(0xFFEDF3E9), contentColor = if (previewDark) Color.White else Color.Black) {
-                    Text(if (draft.labels) "Vista previa: ◯ Cámara" else "Vista previa: ◯", Modifier.padding(12.dp))
+                val previewPalette = themePalette(draft.theme, isSystemInDarkTheme())
+                Surface(color = previewPalette.background, contentColor = previewPalette.onBackground) {
+                    Column(Modifier.fillMaxWidth().padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (draft.clock) Text("12:34", fontSize = draft.clockSize.sp)
+                        LauncherIcon(null, "Cámara", draft)
+                        if (draft.labels) Text("Cámara")
+                        if (draft.searchBar) Text("⌕ Buscar aplicaciones")
+                    }
                 }
+                if (draft.theme == "liquid") Text("Primera paleta Liquid. Refracción y desenfoque pendientes.", style = MaterialTheme.typography.bodySmall)
+                Preference("Iconos con monogramas blancos", draft.monochrome) { draft = draft.copy(monochrome = it) }
+                Text("Tamaño de iconos: ${draft.iconSize} dp")
+                Slider(draft.iconSize.toFloat(), { draft = draft.copy(iconSize = it.toInt()) }, valueRange = 32f..64f, steps = 31)
+                Preference("Widget de reloj", draft.clock) { draft = draft.copy(clock = it) }
+                if (draft.clock) {
+                    Text("Tamaño del reloj: ${draft.clockSize}")
+                    Slider(draft.clockSize.toFloat(), { draft = draft.copy(clockSize = it.toInt()) }, valueRange = 32f..72f, steps = 39)
+                    Preference("Fecha en el reloj", draft.clockDate) { draft = draft.copy(clockDate = it) }
+                }
+                Preference("Barra de búsqueda", draft.searchBar) { draft = draft.copy(searchBar = it) }
+                Text("Movimiento")
+                FlowRow { listOf("soft" to "Suave", "balanced" to "Equilibrado", "weighty" to "Con peso").forEach { (key, label) ->
+                    TextButton(onClick = { draft = draft.copy(motion = key) }, modifier = Modifier.semantics { this.selected = draft.motion == key }) { Text(label) }
+                } }
+                Text("Frecuencia preferida")
+                FlowRow { (listOf(0) + supportedRefreshRates(refreshRates)).forEach { hz ->
+                    TextButton(onClick = { draft = draft.copy(refreshHz = hz) }, modifier = Modifier.semantics { this.selected = draft.refreshHz == hz }) {
+                        Text(if (hz == 0) "Automática" else "$hz Hz")
+                    }
+                } }
+                Text("Solo modos compatibles hasta 144 Hz. Android decide la frecuencia efectiva. Automática corresponde a 0; no detiene la pantalla.", style = MaterialTheme.typography.bodySmall)
+                if (draft.refreshHz != 0 && refreshPreference(draft.refreshHz, refreshRates) == 0f)
+                    Text("La frecuencia guardada no está disponible: se usará Automática.")
                 Action("Añadir página", s.layout.pages < MAX_PAGES && !s.recovery) { state.edit { it.addPage() } }
                 Action("Quitar última página vacía", s.layout.pages > 1 && !s.recovery) { state.edit { it.removeLastPage() } }
                 Action("Elegir aplicación de inicio") { launcherSettings(Settings.ACTION_HOME_SETTINGS) }
@@ -243,7 +284,7 @@ fun Orbita(state: LauncherState, homeRequest: Int) {
                     Action("Restaurar inicio vacío", s.exported) { resetConfirm = true }
                     if (!s.exported) Text("Exporta primero los datos originales para habilitar la restauración.")
                 }
-                Text("ÓRBITA 0.1.0-alpha.1 · Essential", style = MaterialTheme.typography.bodySmall)
+                Text("ÓRBITA 0.2.0-alpha.1", style = MaterialTheme.typography.bodySmall)
             }
         }, confirmButton = { Action("Guardar", s.ready && !s.recovery) { state.saveAppearance(draft); settings = false } }, dismissButton = { Action("Descartar") { settings = false } })
         if (resetConfirm) AlertDialog(onDismissRequest = { resetConfirm = false }, title = { Text("Restaurar inicio vacío") }, text = { Text("Se quitarán los accesos y carpetas de la disposición activa. El respaldo exportado y los archivos originales se conservan.") }, confirmButton = { Action("Restaurar") { state.recover(false); resetConfirm = false; settings = false } }, dismissButton = { Action("Cancelar") { resetConfirm = false } })
@@ -267,7 +308,7 @@ private fun Preference(label: String, checked: Boolean, change: (Boolean) -> Uni
 private fun AppRow(app: AppRecord, snapshot: LauncherSnapshot, open: () -> Unit, options: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         TextButton(onClick = open, modifier = Modifier.weight(1f)) {
-            snapshot.icons[app.key]?.let { Image(it, null, Modifier.size(42.dp)) }
+            LauncherIcon(snapshot.icons[app.key], app.label, snapshot.appearance)
             Spacer(Modifier.width(12.dp)); Text(app.label, Modifier.weight(1f))
         }
         IconButton(onClick = options) { Icon(Icons.Default.MoreVert, "Opciones de ${app.label}") }
@@ -278,8 +319,13 @@ private fun AppRow(app: AppRecord, snapshot: LauncherSnapshot, open: () -> Unit,
 private fun Tile(item: Placement, snapshot: LauncherSnapshot, open: () -> Unit, options: () -> Unit, dock: Boolean = false) {
     val app = snapshot.apps.find { it.key == item.members.first() }
     val name = if (item.folder) item.title else app?.label ?: "No disponible"
+    val source = remember { MutableInteractionSource() }
+    val context = LocalContext.current
+    val systemReduced = Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    val scale = pressScale(source, snapshot.appearance, snapshot.appearance.reducedMotion || systemReduced)
     Column(Modifier.fillMaxWidth().heightIn(min = if (dock) 64.dp else 88.dp)
-        .combinedClickable(onClick = open, onLongClick = options).semantics(mergeDescendants = true) {
+        .graphicsLayer { scaleX = scale; scaleY = scale }
+        .combinedClickable(interactionSource = source, indication = LocalIndication.current, onClick = open, onLongClick = options).semantics(mergeDescendants = true) {
             contentDescription = if (item.folder) "Abrir carpeta $name" else "Abrir $name"
             role = Role.Button
             customActions = listOf(CustomAccessibilityAction("Opciones de $name") { options(); true })
@@ -288,8 +334,7 @@ private fun Tile(item: Placement, snapshot: LauncherSnapshot, open: () -> Unit, 
             Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.secondaryContainer) {
                 Icon(Icons.Default.List, null, Modifier.padding(10.dp).size(26.dp))
             }
-        } else snapshot.icons[item.members.first()]?.let { Image(it, null, Modifier.size(44.dp)) }
-            ?: Icon(Icons.Default.Info, null, Modifier.size(44.dp))
+        } else LauncherIcon(snapshot.icons[item.members.first()], name, snapshot.appearance)
         if (snapshot.appearance.labels) Text(name, maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.labelSmall)
     }
 }

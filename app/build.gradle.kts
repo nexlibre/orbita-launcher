@@ -10,14 +10,14 @@ android {
         applicationId = "org.nexlibre.orbita"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.1.0-alpha.1"
+        versionCode = 3
+        versionName = "0.2.0-alpha.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     signingConfigs {
         val path = System.getenv("ORBITA_SIGNING_PATH")
         val password = System.getenv("ORBITA_SIGNING_PASSWORD")
-        if (!path.isNullOrBlank() && !password.isNullOrBlank()) {
+        if (!path.isNullOrBlank() && !password.isNullOrBlank() && file(path).isFile) {
             create("persistentDevelopment") {
                 storeFile = file(path); storePassword = password
                 keyAlias = "orbita-development"; keyPassword = password
