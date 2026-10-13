@@ -22,6 +22,23 @@ private val labelsKey = booleanPreferencesKey("labels")
 private val reducedKey = booleanPreferencesKey("reduced_motion")
 private val hapticsKey = booleanPreferencesKey("haptics")
 private val themeKey = stringPreferencesKey("theme")
+private val iconSizeKey = intPreferencesKey("icon_size")
+private val monochromeKey = booleanPreferencesKey("monochrome")
+private val clockKey = booleanPreferencesKey("clock")
+private val clockSizeKey = intPreferencesKey("clock_size")
+private val clockDateKey = booleanPreferencesKey("clock_date")
+private val searchBarKey = booleanPreferencesKey("search_bar")
+private val motionKey = stringPreferencesKey("motion")
+private val refreshKey = intPreferencesKey("refresh_hz")
+
+private fun MutablePreferences.putAppearance(value: Appearance) {
+    this[labelsKey] = value.labels; this[reducedKey] = value.reducedMotion
+    this[hapticsKey] = value.haptics; this[themeKey] = value.theme
+    this[iconSizeKey] = value.iconSize; this[monochromeKey] = value.monochrome
+    this[clockKey] = value.clock; this[clockSizeKey] = value.clockSize
+    this[clockDateKey] = value.clockDate; this[searchBarKey] = value.searchBar
+    this[motionKey] = value.motion; this[refreshKey] = value.refreshHz
+}
 
 // One DataStore instance per file, shared across Activity/ViewModel recreation.
 object LauncherRepositories {
@@ -31,7 +48,6 @@ object LauncherRepositories {
     }
 }
 
-data class Appearance(val labels: Boolean = true, val reducedMotion: Boolean = false, val haptics: Boolean = true, val theme: String = "auto")
 data class SavedLauncher(val layout: Layout, val appearance: Appearance, val welcome: Boolean, val recovery: Boolean = false, val backup: Layout? = null)
 
 class LauncherRepository(private val app: Application) {
@@ -45,15 +61,18 @@ class LauncherRepository(private val app: Application) {
             mutablePreferencesOf(recoveryKey to true).apply {
                 validSavedBackup()?.let {
                     this[layoutKey] = LayoutCodec.encode(it.layout); this[lastGoodKey] = LayoutCodec.encode(it.layout)
-                    this[labelsKey] = it.appearance.labels; this[reducedKey] = it.appearance.reducedMotion
-                    this[hapticsKey] = it.appearance.haptics; this[themeKey] = it.appearance.theme; this[onboardedKey] = !it.welcome
+                    putAppearance(it.appearance); this[onboardedKey] = !it.welcome
                 }
             }
         }, scope = scope, produceFile = { file }
     )
     val saved: Flow<SavedLauncher> = store.data.map { prefs ->
         val appearance = Appearance(prefs[labelsKey] ?: true, prefs[reducedKey] ?: false, prefs[hapticsKey] ?: true,
-            prefs[themeKey]?.takeIf { it in listOf("auto", "light", "dark") } ?: "auto")
+            prefs[themeKey]?.takeIf { it in THEMES } ?: "auto",
+            (prefs[iconSizeKey] ?: 44).coerceIn(32, 64), prefs[monochromeKey] ?: false,
+            prefs[clockKey] ?: false, (prefs[clockSizeKey] ?: 48).coerceIn(32, 72),
+            prefs[clockDateKey] ?: true, prefs[searchBarKey] ?: false,
+            prefs[motionKey]?.takeIf { it in MOTIONS } ?: "balanced", (prefs[refreshKey] ?: 0).coerceIn(0, 144))
         val good = validBackup() ?: runCatching { prefs[lastGoodKey]?.let(LayoutCodec::decode) }.getOrNull()
         val decoded = runCatching {
             prefs[layoutKey]?.let(LayoutCodec::decode) ?: LayoutCodec.migrate(
@@ -78,8 +97,8 @@ class LauncherRepository(private val app: Application) {
         return before to after
     }
     suspend fun appearance(value: Appearance) {
-        require(value.theme in listOf("auto", "light", "dark"))
-        store.edit { it[labelsKey] = value.labels; it[reducedKey] = value.reducedMotion; it[hapticsKey] = value.haptics; it[themeKey] = value.theme }
+        value.checked()
+        store.edit { it.putAppearance(value) }
         withContext(Dispatchers.IO) { runCatching { writeBackup(saved.first()) } }
     }
     suspend fun onboard() { store.edit { it[onboardedKey] = true }; withContext(Dispatchers.IO) { runCatching { writeBackup(saved.first()) } } }
@@ -111,14 +130,24 @@ class LauncherRepository(private val app: Application) {
             require(backup.baseFile.length() <= 2_000_000)
             val lines = input.bufferedReader().readLines()
             val layout = LayoutCodec.decode(lines.first())
-            val appearance = if (lines.size == 7) Appearance(lines[1].toBooleanStrict(), lines[2].toBooleanStrict(), lines[3].toBooleanStrict(), lines[4]) else Appearance()
-            require(appearance.theme in listOf("auto", "light", "dark"))
-            SavedLauncher(layout, appearance, if (lines.size == 7) lines[5].toBooleanStrict() else false)
+            val appearance = when {
+                lines.size == 15 && lines.last() == "backup-v2" -> Appearance(
+                    lines[1].toBooleanStrict(), lines[2].toBooleanStrict(), lines[3].toBooleanStrict(), lines[4],
+                    lines[6].toInt(), lines[7].toBooleanStrict(), lines[8].toBooleanStrict(), lines[9].toInt(),
+                    lines[10].toBooleanStrict(), lines[11].toBooleanStrict(), lines[12], lines[13].toInt())
+                lines.size == 7 && lines.last() == "backup-v1" -> Appearance(lines[1].toBooleanStrict(), lines[2].toBooleanStrict(), lines[3].toBooleanStrict(), lines[4])
+                lines.size == 1 -> Appearance()
+                else -> error("Respaldo inválido")
+            }.checked()
+            SavedLauncher(layout, appearance, if (lines.size >= 7) lines[5].toBooleanStrict() else false)
         }
     }.getOrNull() }
     private fun writeBackup(saved: SavedLauncher) = synchronized(backupLock) {
         val output = backup.startWrite()
-        val value = listOf(LayoutCodec.encode(saved.layout), saved.appearance.labels.toString(), saved.appearance.reducedMotion.toString(), saved.appearance.haptics.toString(), saved.appearance.theme, saved.welcome.toString(), "backup-v1").joinToString("\n")
+        val value = listOf(LayoutCodec.encode(saved.layout), saved.appearance.labels.toString(), saved.appearance.reducedMotion.toString(), saved.appearance.haptics.toString(), saved.appearance.theme, saved.welcome.toString(),
+            saved.appearance.iconSize.toString(), saved.appearance.monochrome.toString(), saved.appearance.clock.toString(),
+            saved.appearance.clockSize.toString(), saved.appearance.clockDate.toString(), saved.appearance.searchBar.toString(),
+            saved.appearance.motion, saved.appearance.refreshHz.toString(), "backup-v2").joinToString("\n")
         try { output.write(value.toByteArray()); backup.finishWrite(output) }
         catch (failure: Exception) { backup.failWrite(output); throw failure }
     }

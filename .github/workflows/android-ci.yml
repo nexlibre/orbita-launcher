@@ -46,7 +46,7 @@ jobs:
         run: ./gradlew --no-daemon :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: ORBITA-0.1.0-alpha.1-debug
+          name: ORBITA-0.2.0-alpha.1-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
@@ -122,7 +122,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: ORBITA-0.1.0-alpha.1-debug
+          name: ORBITA-0.2.0-alpha.1-debug
           path: apk
       - name: Publish verified alpha only once
         env:
@@ -130,11 +130,11 @@ jobs:
         run: |
           set -euo pipefail
           gh release list --json tagName --limit 100 > releases.json
-          if jq -e 'any(.[]; .tagName == "v0.1.0-alpha.1")' releases.json >/dev/null; then
+          if jq -e 'any(.[]; .tagName == "v0.2.0-alpha.1")' releases.json >/dev/null; then
             exit 0
           fi
-          cp apk/app-debug.apk ORBITA-0.1.0-alpha.1.apk
-          sha256sum ORBITA-0.1.0-alpha.1.apk > SHA256SUMS.txt
-          gh release create v0.1.0-alpha.1 ORBITA-0.1.0-alpha.1.apk SHA256SUMS.txt \
-            --target "$GITHUB_SHA" --prerelease --title 'ÓRBITA 0.1.0-alpha.1 · Núcleo funcional' \
-            --notes-file docs/RELEASE_ALPHA_0_1.md
+          cp apk/app-debug.apk ORBITA-0.2.0-alpha.1.apk
+          sha256sum ORBITA-0.2.0-alpha.1.apk > SHA256SUMS.txt
+          gh release create v0.2.0-alpha.1 ORBITA-0.2.0-alpha.1.apk SHA256SUMS.txt \
+            --target "$GITHUB_SHA" --prerelease --title 'ÓRBITA 0.2.0-alpha.1 · AMOLED y personalización inicial' \
+            --notes-file docs/RELEASE_ALPHA_0_2.md
