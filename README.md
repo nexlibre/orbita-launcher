@@ -31,3 +31,9 @@ Android mínimo 8 (API 26), SDK 35, JDK 17, wrapper Gradle 8.11.1. Comando: ./gr
 La app fixture no se incluye en el APK de ÓRBITA. ci/android-acceptance.sh se usa solo en emuladores desechables: instala/desinstala la fixture, modifica ajustes, reinicia y daña datos deliberadamente para validar recuperación.
 
 [Visión](docs/PRODUCT_VISION.md) · [Especificación](docs/SPEC_ALPHA_0_1.md) · [Arquitectura](docs/ARCHITECTURE.md) · [Versiones](CHANGELOG.md) · [Licencia](LICENSE)
+
+## Ampliación 0.2.0-alpha.1
+
+Tema AMOLED negro con monogramas blancos; reloj con tamaño y fecha editables, barra de búsqueda opcional, tamaño de iconos y perfiles de movimiento. Temas Pixel inspirado y Liquid inicial. Frecuencia preferida automática o compatible hasta 144 Hz. Android decide la frecuencia efectiva.
+
+[Alcance y limitaciones](docs/RELEASE_ALPHA_0_2.md) · [Desarrollo de edición completa](docs/ROADMAP.md). Widgets externos, edición por elemento, paquetes de iconos y refracción Liquid quedan en siguientes entregas. La release 0.2 solo se publica después de aprobar el CI en main.

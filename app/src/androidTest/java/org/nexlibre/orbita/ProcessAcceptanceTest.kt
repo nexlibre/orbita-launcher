@@ -24,14 +24,17 @@ class ProcessAcceptanceTest {
     private fun expected(): Layout = Layout(2, listOf(
         Placement("folder-test",listOf("com.android.settings/com.android.settings.Settings",fixture),"Pruebas",true,1,7),
         Placement("dock-test",listOf("com.android.calculator2/com.android.calculator2.Calculator"),slot=3,dock=true)))
+    private fun expectedAppearance() = Appearance(labels = false, reducedMotion = true, haptics = false,
+        theme = "amoled", iconSize = 56, monochrome = true, clock = true, clockSize = 64,
+        clockDate = false, searchBar = true, motion = "weighty", refreshHz = 144)
     @Test fun seed() = runBlocking {
-        repository.recover(expected()); repository.appearance(Appearance(labels=false,reducedMotion=true,haptics=false,theme="dark"));repository.onboard()
+        repository.recover(expected()); repository.appearance(expectedAppearance());repository.onboard()
         assertEquals(expected(),repository.saved.first().layout)
     }
     @Test fun verifyAfterRestart() = runBlocking {
         val saved=repository.saved.first()
         assertEquals(expected(),saved.layout);assertFalse(saved.welcome);assertFalse(saved.recovery)
-        assertEquals(Appearance(false,true,false,"dark"),saved.appearance)
+        assertEquals(expectedAppearance(),saved.appearance)
     }
     @Test fun fixtureInstalledAndLaunchable() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
@@ -65,7 +68,7 @@ class ProcessAcceptanceTest {
     @Test fun corruptionIsBlockedAndOriginalArchived() = runBlocking {
         val saved=repository.saved.first()
         assertTrue(saved.recovery);assertEquals(expected(),saved.layout);assertEquals(expected(),saved.backup)
-        assertEquals(Appearance(false,true,false,"dark"),saved.appearance)
+        assertEquals(expectedAppearance(),saved.appearance)
         assertTrue(runCatching { repository.change { Layout() } }.isFailure)
         assertTrue(app.filesDir.listFiles().orEmpty().any { it.name.startsWith("orbita-recovery-") && it.readText().contains("invalid-protobuf") })
     }

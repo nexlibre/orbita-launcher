@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -27,7 +28,7 @@ import java.text.DateFormat as JavaDateFormat
 fun themePalette(theme: String, systemDark: Boolean): ColorScheme = when (theme) {
     "amoled" -> darkColorScheme(primary = Color.White, onPrimary = Color.Black,
         background = Color.Black, onBackground = Color.White, surface = Color.Black, onSurface = Color.White,
-        secondary = Color.White, secondaryContainer = Color(0xFF151515), onSecondaryContainer = Color.White,
+        secondary = Color.White, secondaryContainer = Color.Black, onSecondaryContainer = Color.White,
         surfaceVariant = Color.Black, onSurfaceVariant = Color.White, outline = Color.White)
     "pixel" -> lightColorScheme(primary = Color(0xFF475D92), background = Color(0xFFF5F2FA),
         surface = Color(0xFFF5F2FA), secondaryContainer = Color(0xFFDCE2F9))
@@ -45,8 +46,13 @@ fun ClockWidget(appearance: Appearance) {
     // Effect exists only while the home clock is visible; no frame-by-frame timer.
     LaunchedEffect(Unit) { while (true) { now = Date(); delay(60_000 - System.currentTimeMillis() % 60_000) } }
     Column(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(DateFormat.getTimeFormat(context).format(now), fontSize = appearance.clockSize.sp,
-            color = MaterialTheme.colorScheme.onBackground)
+        BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            val fontScale = LocalDensity.current.fontScale
+            val text = DateFormat.getTimeFormat(context).format(now)
+            val fitSize = (maxWidth.value / (text.length * 0.7f * fontScale)).coerceAtLeast(16f)
+            Text(text, fontSize = minOf(appearance.clockSize.toFloat(), fitSize).sp,
+                maxLines = 1, color = MaterialTheme.colorScheme.onBackground)
+        }
         if (appearance.clockDate) Text(JavaDateFormat.getDateInstance(JavaDateFormat.FULL).format(now),
             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onBackground)
     }
